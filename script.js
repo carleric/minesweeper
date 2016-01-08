@@ -1,6 +1,7 @@
 var gameBoardSize = 9;
-var numberOfMines = 5;
+var numberOfMines = 3;
 var minesInGame = [numberOfMines];
+var cellsFlagged = [];
 
 var buildGame = function() {
 
@@ -27,6 +28,7 @@ var buildGame = function() {
       cellDiv.attr("id", cellId);
       cellDiv.mouseup(cellMouseUp);
       cellDiv.click(cellClick);
+      cellDiv.contextmenu(cellContext);
       gameBoard.append(cellDiv);
       cellId ++;
     }
@@ -88,9 +90,39 @@ var numberOfMinesInPerimeter = function(cellId) {
 }
 
 var cellClick = function(event) {
+
+  //explosion!
   if(cellHasMine(parseInt(this.id))) {
     $(this).removeClass('cell_mine');
     $(this).addClass('cell_mine_exploded');
+  }
+
+
+}
+
+var cellContext = function(e) {
+  e.preventDefault();
+  if(! _.contains(cellsFlagged, this.id)) {
+    cellsFlagged.push(this.id);
+    $(this).addClass('cell_flagged');
+    checkStatus();
+  } else {
+    cellsFlagged.splice(cellsFlagged.indexOf(this.id), 1);
+    $(this).removeClass('cell_flagged');
+  }
+}
+
+var checkStatus = function() {
+  if(cellsFlagged.length == minesInGame.length) {
+    matchCount = 0;
+    for(var i = 0; i < cellsFlagged.length; i++) {
+      if(_.contains(minesInGame, parseInt(cellsFlagged[i]))) {
+        matchCount ++;
+      }
+    }
+    if(matchCount == minesInGame.length) {
+      alert ('you won!');
+    }
   }
 }
 
