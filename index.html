@@ -36,7 +36,7 @@
     width:20px;
     height:20px;
     background-color: gray;
-    //opacity:0.5;
+    /*opacity:0.5;*/
   }
 
   .cell_mine {
@@ -50,12 +50,34 @@
   .cell_flagged {
     background-color: green;
   }
+
+  #gameScore {
+    width: 200px;
+    height: 40px;
+  }
+
+  #gameScore div {
+    float:left;
+    width:98px;
+    border:1px solid black;
+  }
+
+  #gameTimeElapsed {
+    text-align: right;;
+  }
 </style>
 </head>
 
 <body>
 
+<div id="gameScore">
+  <div id="gameMinesRemaining">010</div>
+  <div id="gameTimeElapsed">000</div>
+</div>
+
 <div id="gameBoard"></div>
+
 <script src="script.js"></script>
+
 </body>
 </html>

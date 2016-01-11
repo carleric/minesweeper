@@ -1,17 +1,23 @@
 var gameBoardSize = 9;
-var numberOfMines = 5;
+var numberOfMines = 10;
 var minesInGame = [numberOfMines];
 var cellsFlagged = [];
 var cellsCovered = [];
 var cellHints = [];
 var gameIsOver = false;
 var lastContextClickedId;//ignore mouseup on cell that was just flagged
+var countOfMinesRemaining;
+var timeElapsed = 0;
+var timerId;
 
 var buildGame = function() {
 
   for(var i = 0; i < numberOfMines; i++) {
     minesInGame[i] = Math.floor(Math.random() * (gameBoardSize * gameBoardSize));
   }
+  minesInGame = _.uniq(minesInGame);
+  countOfMinesRemaining = minesInGame.length;
+  $("#gameMinesRemaining").text(countOfMinesRemaining);
 
   var gameBoard = $("#gameBoard");
 
@@ -51,10 +57,16 @@ var cellMouseUp = function(e) {
   if(gameIsOver) return;
   if(cellId == lastContextClickedId) return;
 
+  //start game timer
+  if(timerId == null) {
+    timerId = window.setInterval(incrementTime, 1000);
+  }
+
   //explosion!
   if(cellHasMine(cellId)) {
     explodeCell(cellId);
     gameIsOver = true;
+    window.clearInterval(timerId);
   }
 
   //uncover
@@ -64,12 +76,24 @@ var cellMouseUp = function(e) {
 
 }
 
+var incrementTime = function() {
+  //console.log("timerClick, timeElapsed="+timeElapsed)
+  timeElapsed ++;
+  var timeElapsedString = timeElapsed.toString();
+  if(timeElapsedString.length == 1) {
+    timeElapsedString = "00" + timeElapsedString;
+  } else if(timeElapsedString.length == 2) {
+    timeElapsedString = "0" + timeElapsedString;
+  }
+  $("#gameTimeElapsed").text(timeElapsedString);
+}
+
 var cellHasMine = function(cellId) {
   return _.contains(minesInGame, cellId);
 }
 
-var idsOfCoveredNeighbors = function(cellId) {
-    return _.intersection(cellsCovered, idsOfNeighbors(cellId));
+var idsOfCoveredUnflaggedNeighbors = function(cellId) {
+    return _.difference(_.difference(_.intersection(cellsCovered, idsOfNeighbors(cellId)), cellsFlagged), minesInGame);
 }
 
 var idsOfNeighbors = function(cellId) {
@@ -128,16 +152,21 @@ var cellClick = function(event) {
 var cellContextClick = function(e) {
   console.log("context click on id=" + this.id)
   e.preventDefault();
-  lastContextClickedId = this.id;
+  var cellId = parseInt(this.id);
+  lastContextClickedId = cellId;
 
-  if(! _.contains(cellsFlagged, this.id)) {
-    cellsFlagged.push(this.id);
+  if(! _.contains(cellsFlagged, cellId)) {
+    cellsFlagged.push(cellId);
     $(this).children(".cell_cover").addClass('cell_flagged');
     checkStatus();
+    countOfMinesRemaining --;
   } else {
-    cellsFlagged.splice(cellsFlagged.indexOf(this.id), 1);
+    cellsFlagged.splice(cellsFlagged.indexOf(cellId), 1);
     $(this).children(".cell_cover").removeClass('cell_flagged');
+    countOfMinesRemaining ++;
   }
+
+  $("#gameMinesRemaining").text(countOfMinesRemaining);
 }
 
 var checkStatus = function() {
@@ -151,6 +180,7 @@ var checkStatus = function() {
     if(matchCount == minesInGame.length) {
       alert ('you won!');
       gameIsOver = true;
+      window.clearInterval(timerId);
     }
   }
 }
@@ -167,7 +197,7 @@ var explodeCell = function(cellId) {
 }
 
 var unCoverCell = function(cellId) {
-  console.log("uncovering cell="+cellId)
+  console.log("uncovering cell="+cellId + " cellsCovered.length=" + cellsCovered.length)
   if(_.contains(cellsCovered, cellId)) {
     cellsCovered = _.without(cellsCovered, cellId);
     var cell = cellWithId(cellId);
@@ -181,17 +211,21 @@ var unCoverCell = function(cellId) {
 var unCoverCells = function(cellId) {
   var hintsUncovered = 0; //stop uncovering cells after maximum number of hints have been uncovered
   unCoverCell(cellId);
-  var neighborIds = idsOfCoveredNeighbors(cellId);
+  var neighborIds = idsOfCoveredUnflaggedNeighbors(cellId);
   while(neighborIds.length > 0 && hintsUncovered < 4) {
     neighborId = neighborIds.pop();
     console.log("checking id=" + neighborId + " neighborIds.length=" + neighborIds.length + " hintsUncovered=" + hintsUncovered);
     if(!cellHasMine(neighborId)) {
-      if(cellHints[neighborId] > 0) hintsUncovered++;
+      if(cellHints[neighborId] > 0) {
+        hintsUncovered++;
+      }
       unCoverCell(neighborId);
     }
-    if(neighborIds.length == 1) { //when the last perimeter cell is uncovered, look for more to uncover in its proximity
-      console.log("checking for more cells to uncover");
-      neighborIds = _.union(neighborIds, idsOfCoveredNeighbors(neighborId));
+
+    //when the last perimeter cell is uncovered, look for more to uncover in its proximity
+    if(neighborIds.length == 0) {
+      neighborIds = idsOfCoveredUnflaggedNeighbors(neighborId);
+      console.log("added more ids to uncover {" + neighborIds + "}");
     }
   }
 }
