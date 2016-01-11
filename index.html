@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-<title>Page Title</title>
+<title>Minesweeper Lite </title>
 <script src="www/lib/jquery/dist/jquery.min.js"></script>
 <script src="www/lib/underscore/underscore-min.js"></script>
 
@@ -14,12 +14,29 @@
     margin:0;
   }
 
+  body{
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+  }
+
   .cell {
     float:left;
     border:1px solid black;
     width:20px;
     height:20px;
     text-align: center;
+  }
+
+  .cell_cover {
+    position: absolute;
+    width:20px;
+    height:20px;
+    background-color: gray;
+    //opacity:0.5;
   }
 
   .cell_mine {
